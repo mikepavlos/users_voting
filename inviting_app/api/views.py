@@ -12,13 +12,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
 
+from profiles.models import Profile
 from .serializers import (
     SignUpSerializer,
     AuthSerializer,
-    UserSerializer,
-    InviteSerializer
+    ProfileSerializer
 )
-from profiles.models import Profile
 
 User = get_user_model()
 
@@ -51,7 +50,6 @@ class SignUpView(APIView):
         except IntegrityError:
             return
 
-
     @staticmethod
     def send_code(phone):
         code = get_random_string(
@@ -80,10 +78,10 @@ class AuthView(APIView):
         return Response({'token': str(token)}, status=status.HTTP_200_OK)
 
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    # permission_classes = (IsAdminUser,)
+class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    permission_classes = (IsAdminUser,)
 
     @action(
         methods=('get', 'post'),
@@ -91,19 +89,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def me(self, request):
-        user = request.user
-
+        profile = request.user.profile
         if request.method == 'GET':
-            serializer = UserSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        if user.profile.activated_invite:
-            return Response({'errors': 'В профиле уже активирован некий код.'})
-        serializer = InviteSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        persons_invite_code = serializer.validated_data['activated_invite']
-        if persons_invite_code == user.profile.invite_code:
-            return Response({'errors': 'Нельзя активировать собственный код.'})
-        get_object_or_404(Profile, invite_code=persons_invite_code)
-        Profile.objects.filter(user=user).update(invite_code=persons_invite_code)
+            serializer = ProfileSerializer(profile)
+        else:
+            serializer = ProfileSerializer(profile, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.update(profile, serializer.validated_data)
         return Response(serializer.data, status=status.HTTP_200_OK)
