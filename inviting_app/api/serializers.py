@@ -1,3 +1,5 @@
+from typing import List
+
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -11,14 +13,20 @@ PROFILE_FIELDS = ('user_id', 'phone', 'invite_code', 'invitations')
 
 
 class SignUpSerializer(serializers.Serializer):
-    phone = serializers.IntegerField(
+    phone = serializers.CharField(
         required=True,
-        validators=[phone_validator]
+        validators=[phone_validator],
+        write_only=True,
+    )
+    code = serializers.CharField(
+        max_length=4,
+        read_only=True,
     )
 
 
 class AuthSerializer(serializers.Serializer):
-    code = serializers.CharField(required=True)
+    code = serializers.CharField(required=True, write_only=True)
+    token = serializers.CharField(read_only=True)
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -31,7 +39,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = PROFILE_FIELDS + ('activated_invite',)
         read_only_fields = PROFILE_FIELDS
 
-    def get_invitations(self, obj):
+    def get_invitations(self, obj) -> List[str] | None:
         return (
             User.objects
             .filter(profile__activated_invite=obj.invite_code)

@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 from django.shortcuts import get_object_or_404
 from django.utils.crypto import get_random_string
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+from profiles.models import Profile
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
@@ -12,7 +14,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
 
-from profiles.models import Profile
 from .serializers import (
     SignUpSerializer,
     AuthSerializer,
@@ -25,6 +26,11 @@ User = get_user_model()
 class SignUpView(APIView):
     permission_classes = (AllowAny,)
 
+    @extend_schema(
+        request=SignUpSerializer,
+        responses={status.HTTP_200_OK: SignUpSerializer},
+        methods=['POST'],
+    )
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -64,6 +70,16 @@ class SignUpView(APIView):
 class AuthView(APIView):
     permission_classes = (AllowAny,)
 
+    @extend_schema(
+        request=AuthSerializer,
+        responses={
+            status.HTTP_200_OK: OpenApiResponse(
+                response=AuthSerializer,
+                description='Авторизация номера прошла успешно. Токен выдан'
+            )
+        },
+        methods=['POST'],
+    )
     def post(self, request):
         serializer = AuthSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

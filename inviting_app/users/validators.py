@@ -1,8 +1,8 @@
 from django.core.exceptions import ValidationError
 
 
-def phone_validator(value):
-    if len(str(value)) != 10:
+def phone_validator(value: str):
+    if len(value) != 10 or not value.isdigit():
         raise ValidationError(
             'Некорректный телефонный номер. '
             'Введите номер телефона в виде 10-значного '

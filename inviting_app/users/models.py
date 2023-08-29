@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
@@ -11,8 +12,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     Модель пользователя для авторизации.
     """
 
-    phone = models.PositiveSmallIntegerField(
+    phone = models.CharField(
         'Телефон',
+        max_length=settings.PHONE_NUMBER_LENGTH,
         unique=True,
         validators=[phone_validator],
         help_text=(
